@@ -23,14 +23,32 @@ def home():
 def predict():
     try:
         if request.method == 'POST':
+            # Validate request data
+            if not request.json:
+                return {"error": "No JSON data provided"}, 400
+            
+            if 'data' not in request.json or 'accent' not in request.json:
+                return {"error": "Missing 'data' or 'accent' in request"}, 400
+                
             data = request.json['data']
             accent_input = request.json['accent']
+            
+            if not data or not accent_input:
+                return {"error": "Empty 'data' or 'accent' provided"}, 400
+                
             accent = get_accent_tld(accent_input)
-            print(accent)
+            if not accent:
+                return {"error": f"Invalid accent: {accent_input}"}, 400
+                
+            print(f"Processing TTS for accent: {accent}")
             result = TTSapplication().text2speech(data, accent)
             return {"data": result.decode("utf-8")}
+        else:
+            # Handle GET requests
+            return {"message": "Use POST method with JSON data containing 'data' and 'accent' fields"}, 200
     except Exception as e:
-        raise TTSException(e, sys)
+        print(f"Error in predict route: {str(e)}")
+        return {"error": "Internal server error occurred"}, 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
